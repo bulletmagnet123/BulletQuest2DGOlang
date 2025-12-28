@@ -137,6 +137,8 @@ func (p *PlayScene) Draw(screen *ebiten.Image) {
 		p.MapManager.Draw(screen)
 	}
 
+	ExitGameButton.Draw(screen)
+
 	p.drawPlayer(screen)
 
 	if p.PlayingUI != nil {

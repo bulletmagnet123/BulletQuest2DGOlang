@@ -4,6 +4,27 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+type Button struct {
+	image  *ebiten.Image
+	pushed bool
+}
+
+func NewButton(image *ebiten.Image) *Button {
+	return &Button{image: image, pushed: false}
+}
+
+func (b *Button) IsPushed() bool {
+	return b.pushed
+}
+
+func (b *Button) SetPushed(p bool) {
+	b.pushed = p
+}
+
+func (b *Button) Draw(screen *ebiten.Image) {
+	// Draw button implementation
+}
+
 type Scene interface {
 	Update() error
 	Draw(screen *ebiten.Image)
@@ -61,27 +82,13 @@ func (m *MenuScene) Enter() {}
 func (m *MenuScene) Exit()  {}
 
 func (m *MenuScene) Update() error {
-	pressed := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
-	if pressed {
-		PlayButtonNormal.SetPushed(true)
-	} else {
-		// If the button was pressed and now released, treat as click
-		if PlayButtonNormal.IsPushed() && m.wasPressed {
-			m.sm.GoTo(NewPlayScene(m.sm))
-		}
-		PlayButtonNormal.SetPushed(false)
-	}
-	m.wasPressed = pressed
+
 	return nil
 }
 
 func (m *MenuScene) Draw(screen *ebiten.Image) {
 	DrawTextAtCenter(screen, "Bullet Quest 2D")
-	if PlayButtonNormal.IsPushed() {
-		PlayButtonNormalPushed.Draw(screen)
-	} else {
-		PlayButtonNormal.Draw(screen)
-	}
+
 }
 
 func (m *MenuScene) Layout(outsideWidth, outsideHeight int) (int, int) {

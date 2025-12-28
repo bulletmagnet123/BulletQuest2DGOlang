@@ -15,10 +15,22 @@ func DrawTextAtCenter(screen *ebiten.Image, text string) {
 }
 
 func init() {
-	var err error
+	// Load button atlas and initialize button images and button objects
+	atlas, _, err := ebitenutil.NewImageFromFile("assets/bluebuttons.png")
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	PlayButtonNormal = atlas.SubImage(PlayingNormalRect).(*ebiten.Image)
+	PlayButtonNormalPushed = atlas.SubImage(PlayingPushedRect).(*ebiten.Image)
+	MenuNormalBtn = atlas.SubImage(MenuNormalRect).(*ebiten.Image)
+	MenuPushedBtn = atlas.SubImage(MenuPushedRect).(*ebiten.Image)
+
+	// Place the Start and Exit buttons in the top-left of the screen
+	StartGameButton = NewCustomButton(10, 10, 64, 32, 2.0, PlayButtonNormal)
+	ExitGameButton = NewCustomButton(10, 60, 64, 32, 2.0, MenuNormalBtn)
+	StartGameButtonPushed = NewCustomButton(10, 10, 64, 32, 2.0, PlayButtonNormalPushed)
+	ExitGameButtonPushed = NewCustomButton(10, 60, 64, 32, 2.0, MenuPushedBtn)
 
 }
 
@@ -38,6 +50,7 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	StartGameButton.Draw(screen)
 	g.manager.Draw(screen)
 }
 
@@ -45,17 +58,14 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 	return g.manager.Layout(outsideWidth, outsideHeight)
 }
 
-var PlayButtonNormal *CustomButton
-var PlayButtonNormalPushed *CustomButton
+var StartGameButton *CustomButton
+var ExitGameButton *CustomButton
+var StartGameButtonPushed *CustomButton
+var ExitGameButtonPushed *CustomButton
 
 func main() {
 	ebiten.SetWindowSize(640, 480)
 	ebiten.SetWindowTitle("Bullet Quest 2D")
-	buttonImageNormal := menuNormal
-	buttonImagePushed := menuPushed
-	PlayButtonNormal = NewCustomButton(100, 100, 64, 64, 1.0, buttonImageNormal)
-	PlayButtonNormalPushed = NewCustomButton(100, 100, 64, 64, 1.0, buttonImagePushed)
-
 	// Load character sprites used by the PlayScene
 	LoadGameCharacters()
 
@@ -64,16 +74,4 @@ func main() {
 	}
 }
 
-var (
-	atlas, _, err = ebitenutil.NewImageFromFile("assets/bluebuttons.png")
-	menuNormal    = atlas.SubImage(MenuNormalRect).(*ebiten.Image)
-	menuPushed    = atlas.SubImage(MenuPushedRect).(*ebiten.Image) // if needed
-	btn           = NewCustomButton(10, 10, 16, 16, 2.0, menuNormal)
-)
-
-func (g *Game) loadAssets() {
-	if err != nil {
-		log.Fatal(err)
-	}
-
-}
+var PlayButtonNormal, PlayButtonNormalPushed, MenuNormalBtn, MenuPushedBtn *ebiten.Image
