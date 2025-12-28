@@ -43,6 +43,14 @@ func (b *CustomButton) IsPushed() bool {
 	return b.Pushed
 }
 
+func (b *CustomButton) Contains(mx, my int) bool {
+	left := int(b.X)
+	top := int(b.Y)
+	w := int(b.Width * b.Scale)
+	h := int(b.Height * b.Scale)
+	return mx >= left && mx < left+w && my >= top && my < top+h
+}
+
 func loadImage() *ebiten.Image {
 	atlas, _, err := ebitenutil.NewImageFromFile("assets/bluebuttons.png")
 	if err != nil {

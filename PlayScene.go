@@ -1,9 +1,12 @@
 package main
 
 import (
+	"image"
+	"log"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 // PlayScene: simple gameplay placeholder moved to its own file
@@ -14,13 +17,30 @@ type PlayScene struct {
 		Draw(screen *ebiten.Image)
 		CanMoveHere(x, y float64) bool
 	}
-	Skeleton  *Character
-	PlayingUI interface{ DrawUI(screen *ebiten.Image) }
-	BtnExit   *CustomButton
+	Skeleton    *Character
+	PlayingUI   interface{ DrawUI(screen *ebiten.Image) }
+	BtnExit     *CustomButton
+	tilemapJSON *TilemapJSON
+	tilemapImg  *ebiten.Image
 }
 
 func NewPlayScene(sm *SceneManager) *PlayScene {
-	return &PlayScene{sm: sm, Player: NewPlayer()}
+	p := &PlayScene{sm: sm, Player: NewPlayer()}
+
+	// attempt to load the tilemap JSON and tileset image for the PlayScene
+	if tm, err := NewTilemapJSON("assets/maps/dirtmap.json"); err != nil {
+		log.Println("failed to load tilemap JSON:", err)
+	} else {
+		p.tilemapJSON = tm
+	}
+
+	if img, _, err := ebitenutil.NewImageFromFile("assets/maps/floorsheet.png"); err != nil {
+		log.Println("failed to load tilemap image:", err)
+	} else {
+		p.tilemapImg = img
+	}
+
+	return p
 
 }
 
@@ -132,23 +152,57 @@ func (p *PlayScene) updatePlayerMove(delta float64) {
 }
 
 func (p *PlayScene) Draw(screen *ebiten.Image) {
+	screen.Clear()
 	// Render order similar to original Java: map, player, other chars, UI, buttons
-	if p.MapManager != nil {
-		p.MapManager.Draw(screen)
-	}
-
-	ExitGameButton.Draw(screen)
-
-	p.drawPlayer(screen)
-
-	if p.PlayingUI != nil {
-		p.PlayingUI.DrawUI(screen)
-	}
 
 	// Draw exit button if provided
 	if p.BtnExit != nil {
 		p.BtnExit.Draw(screen)
 	}
+
+	if p.tilemapJSON == nil || p.tilemapImg == nil {
+		// nothing to draw
+		log.Println("tilemapJSON or tilemapImg is nil")
+		return
+	}
+
+	// determine tiles-per-row from the spritesheet size rather than hardcoding 22
+	imgW, _ := p.tilemapImg.Size()
+	tilesPerRow := imgW / 16
+
+	// reuse options to avoid allocating per-tile
+	opts := &ebiten.DrawImageOptions{}
+
+	for _, layer := range p.tilemapJSON.Layers {
+		// loop over the tiles in the layer data
+		for index, id := range layer.Data {
+			// skip empty tiles (commonly 0 in Tiled exports)
+			if id <= 0 {
+				continue
+			}
+
+			// get the tile position of the tile (in tiles)
+			tx := index % layer.Width
+			ty := index / layer.Width
+
+			// convert the tile position to pixel position
+			px := tx * 16
+			py := ty * 16
+
+			// compute the source tile position in the spritesheet
+			sCol := (id - 1) % tilesPerRow
+			sRow := (id - 1) / tilesPerRow
+			srcX := sCol * 16
+			srcY := sRow * 16
+
+			// set the draw options and draw
+			opts.GeoM.Reset()
+			opts.GeoM.Translate(float64(px), float64(py))
+			screen.DrawImage(p.tilemapImg.SubImage(image.Rect(srcX, srcY, srcX+16, srcY+16)).(*ebiten.Image), opts)
+		}
+	}
+
+	p.drawPlayer(screen)
 
 	// Centered help text
 	DrawTextAtCenter(screen, "Gameplay - press ESC to return")

@@ -1,11 +1,14 @@
 package main
 
 import (
+	"image/color"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
+
+var PlayButtonNormal, PlayButtonNormalPushed, MenuNormalBtn, MenuPushedBtn *ebiten.Image
 
 func DrawTextAtCenter(screen *ebiten.Image, text string) {
 	bounds := screen.Bounds()
@@ -36,6 +39,7 @@ func init() {
 
 type Game struct {
 	manager *SceneManager
+	Player  *Player
 }
 
 func NewGame() *Game {
@@ -50,7 +54,10 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	StartGameButton.Draw(screen)
+	screen.Fill(color.RGBA{120, 180, 255, 255}) // gray background
+	if StartGameButton != nil {
+		StartGameButton.Draw(screen)
+	}
 	g.manager.Draw(screen)
 }
 
@@ -64,14 +71,14 @@ var StartGameButtonPushed *CustomButton
 var ExitGameButtonPushed *CustomButton
 
 func main() {
-	ebiten.SetWindowSize(640, 480)
 	ebiten.SetWindowTitle("Bullet Quest 2D")
+	ebiten.SetWindowSize(1280, 720)
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+	ebiten.SetTPS(60)
 	// Load character sprites used by the PlayScene
 	LoadGameCharacters()
-
 	if err := ebiten.RunGame(NewGame()); err != nil {
 		log.Fatal(err)
 	}
-}
 
-var PlayButtonNormal, PlayButtonNormalPushed, MenuNormalBtn, MenuPushedBtn *ebiten.Image
+}

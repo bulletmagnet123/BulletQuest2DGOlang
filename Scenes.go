@@ -1,29 +1,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/hajimehoshi/ebiten/v2"
 )
-
-type Button struct {
-	image  *ebiten.Image
-	pushed bool
-}
-
-func NewButton(image *ebiten.Image) *Button {
-	return &Button{image: image, pushed: false}
-}
-
-func (b *Button) IsPushed() bool {
-	return b.pushed
-}
-
-func (b *Button) SetPushed(p bool) {
-	b.pushed = p
-}
-
-func (b *Button) Draw(screen *ebiten.Image) {
-	// Draw button implementation
-}
 
 type Scene interface {
 	Update() error
@@ -82,13 +63,54 @@ func (m *MenuScene) Enter() {}
 func (m *MenuScene) Exit()  {}
 
 func (m *MenuScene) Update() error {
+	pressed := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
+	mx, my := ebiten.CursorPosition()
 
+	if StartGameButton != nil && pressed && StartGameButton.Contains(mx, my) {
+		StartGameButton.SetPushed(true)
+	} else {
+		if StartGameButton != nil && StartGameButton.IsPushed() && m.wasPressed && StartGameButton.Contains(mx, my) {
+			m.sm.GoTo(NewPlayScene(m.sm))
+		}
+		if StartGameButton != nil {
+			StartGameButton.SetPushed(false)
+		}
+	}
+
+	// Exit button: exit program when clicked
+	if ExitGameButton != nil && pressed && ExitGameButton.Contains(mx, my) {
+		ExitGameButton.SetPushed(true)
+	} else {
+		if ExitGameButton != nil && ExitGameButton.IsPushed() && m.wasPressed && ExitGameButton.Contains(mx, my) {
+			os.Exit(0)
+		}
+		if ExitGameButton != nil {
+			ExitGameButton.SetPushed(false)
+		}
+	}
+
+	m.wasPressed = pressed
 	return nil
 }
 
 func (m *MenuScene) Draw(screen *ebiten.Image) {
 	DrawTextAtCenter(screen, "Bullet Quest 2D")
 
+	if StartGameButton != nil {
+		if StartGameButton.IsPushed() {
+			StartGameButtonPushed.Draw(screen)
+		} else {
+			StartGameButton.Draw(screen)
+		}
+	}
+
+	if ExitGameButton != nil {
+		if ExitGameButton.IsPushed() {
+			ExitGameButtonPushed.Draw(screen)
+		} else {
+			ExitGameButton.Draw(screen)
+		}
+	}
 }
 
 func (m *MenuScene) Layout(outsideWidth, outsideHeight int) (int, int) {
