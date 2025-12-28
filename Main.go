@@ -22,35 +22,27 @@ func init() {
 
 }
 
-type Game struct{}
+type Game struct {
+	manager *SceneManager
+}
+
+func NewGame() *Game {
+	g := &Game{}
+	g.manager = &SceneManager{}
+	g.manager.GoTo(NewMenuScene(g.manager))
+	return g
+}
 
 func (g *Game) Update() error {
-	PlayButtonNormal.SetPushed(false)
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		PlayButtonNormal.SetPushed(true)
-		log.Println("Button Pressed")
-	} else {
-		PlayButtonNormal.SetPushed(false)
-		log.Println("Button Released")
-	}
-	return nil
+	return g.manager.Update()
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	DrawTextAtCenter(screen, "Bullet Quest 2D")
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		PlayButtonNormal.SetPushed(true)
-		PlayButtonNormalPushed.Draw(screen)
-		log.Println("Button Pressed")
-	} else {
-		PlayButtonNormal.SetPushed(false)
-		PlayButtonNormal.Draw(screen)
-		log.Println("Button Released")
-	}
+	g.manager.Draw(screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return 320, 128
+	return g.manager.Layout(outsideWidth, outsideHeight)
 }
 
 var PlayButtonNormal *CustomButton
@@ -64,7 +56,10 @@ func main() {
 	PlayButtonNormal = NewCustomButton(100, 100, 64, 64, 1.0, buttonImageNormal)
 	PlayButtonNormalPushed = NewCustomButton(100, 100, 64, 64, 1.0, buttonImagePushed)
 
-	if err := ebiten.RunGame(&Game{}); err != nil {
+	// Load character sprites used by the PlayScene
+	LoadGameCharacters()
+
+	if err := ebiten.RunGame(NewGame()); err != nil {
 		log.Fatal(err)
 	}
 }
