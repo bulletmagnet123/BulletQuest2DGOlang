@@ -22,6 +22,7 @@ type PlayScene struct {
 	BtnExit     *CustomButton
 	tilemapJSON *TilemapJSON
 	tilemapImg  *ebiten.Image
+	Camera      *Camera
 }
 
 func NewPlayScene(sm *SceneManager) *PlayScene {
@@ -40,8 +41,29 @@ func NewPlayScene(sm *SceneManager) *PlayScene {
 		p.tilemapImg = img
 	}
 
+	// Initialize camera to follow the player (not any other character).
+	// Screen size matches this scene's Layout(). World size is derived from the tilemap when available.
+	screenW, screenH := 320, 128
+	worldW, worldH := screenW, screenH
+	if p.tilemapJSON != nil {
+		maxW, maxH := 0, 0
+		for _, layer := range p.tilemapJSON.Layers {
+			if layer.Width > maxW {
+				maxW = layer.Width
+			}
+			if layer.Height > maxH {
+				maxH = layer.Height
+			}
+		}
+		if maxW > 0 {
+			worldW = maxW * 16
+		}
+		if maxH > 0 {
+			worldH = maxH * 16
+		}
+	}
+	p.Camera = NewCamera(screenW, screenH, worldW, worldH)
 	return p
-
 }
 
 func (p *PlayScene) Enter() {}
@@ -51,6 +73,12 @@ func (p *PlayScene) Update() error {
 	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
 		p.sm.GoTo(NewMenuScene(p.sm))
 	}
+
+	if p.Camera != nil && p.Player != nil {
+		p.Camera.FollowCharacter(p.Player.Character)
+		p.Camera.Update()
+	}
+
 	// simple fixed delta (approx 60 FPS). Replace with real delta if available.
 	delta := 1.0 / 60.0
 	p.updatePlayerMove(delta)
@@ -198,6 +226,8 @@ func (p *PlayScene) Draw(screen *ebiten.Image) {
 			// set the draw options and draw
 			opts.GeoM.Reset()
 			opts.GeoM.Translate(float64(px), float64(py))
+
+			opts.GeoM.Translate(-p.Camera.X, -p.Camera.Y)
 			screen.DrawImage(p.tilemapImg.SubImage(image.Rect(srcX, srcY, srcX+16, srcY+16)).(*ebiten.Image), opts)
 		}
 	}
@@ -220,6 +250,9 @@ func (p *PlayScene) drawPlayer(screen *ebiten.Image) {
 	}
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(p.Player.Position.X, p.Player.Position.Y)
+	if p.Camera != nil {
+		op.GeoM.Translate(-p.Camera.X, -p.Camera.Y)
+	}
 	screen.DrawImage(sprite, op)
 }
 
@@ -234,6 +267,9 @@ func (p *PlayScene) drawCharacter(screen *ebiten.Image, c *Character) {
 	}
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(c.Position.X, c.Position.Y)
+	if p.Camera != nil {
+		op.GeoM.Translate(-p.Camera.X, -p.Camera.Y)
+	}
 	screen.DrawImage(sprite, op)
 }
 func (p *PlayScene) Layout(outsideWidth, outsideHeight int) (int, int) {
